@@ -4,11 +4,12 @@ ENV NV_DRIV_SH http://uk.download.nvidia.com/XFree86/Linux-x86_64/352.63/NVIDIA-
 ENV CUDA_RUN http://developer.download.nvidia.com/compute/cuda/7_0/Prod/local_installers/cuda_7.0.28_linux.run
 RUN apt-get update              \
     && apt-get install -y       \
+        dh-autoreconf           \
         cmake                   \
         curl                    \
         gfortran                \
         git-core                \
-        g++>4.9              \
+        g++>4.9                 \
         libtie-persistent-perl  \
         libreadline-dev         \
         make                    \
@@ -53,17 +54,15 @@ RUN git clone https://github.com/xianyi/OpenBLAS.git -b v0.2.15 /tmp/openblas &&
     make install && \
     cd /tmp && rm -r *
 
+# Setup paths - torch installation requires nvcc to be on the path to install cutorch
+ENV PATH=/usr/local/cuda/bin:/opt/torch/install/bin:${PATH} \
+    LD_LIBRARY_PATH=/usr/local/cuda/lib64:/opt/torch/install/lib:${LD_LIBRARY_PATH}
+
 # Torch7
 RUN git clone https://github.com/torch/distro.git /opt/torch && \
     cd /opt/torch && \
     ./install.sh -b && \
     ls | grep -v "^install$" | xargs rm -r && rm -r .git
-
-# Setup paths
-ENV PATH=/opt/torch/install/bin:${PATH} \
-    LD_LIBRARY_PATH=/opt/torch/install/lib:${LD_LIBRARY_PATH}
-
-
 
 # Extra Torch dependencies
 RUN luarocks install hash && \
@@ -75,10 +74,6 @@ RUN luarocks install hash && \
     luarocks install lub && \
     luarocks install yaml && \
     luarocks install https://raw.githubusercontent.com/bshillingford/autobw.torch/master/autobw-scm-1.rockspec
-
-# Setup paths
-ENV PATH=/usr/local/cuda/bin:${PATH} \
-    LD_LIBRARY_PATH=/usr/local/cuda/lib64:/opt/torch/install/lib:${LD_LIBRARY_PATH}
 
 ADD fblualib_install_all.sh /tmp
 RUN bash /tmp/fblualib_install_all.sh
